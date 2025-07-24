@@ -9,23 +9,23 @@ import {
   ChangeDetectorRef,
   AfterViewInit,
   ElementRef,
-  ViewEncapsulation,
   ViewChild,
+  OnInit,
 } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import Swiper from 'swiper';
-import { catchError, map, of } from 'rxjs';
+import { catchError, forkJoin, map, of, Observable } from 'rxjs';
 import { FaceBoundingBox } from './profile-comparison.models';
-// import { UserNumber } from './models/profile-comparison.enums'; // if used
 
 @Component({
   selector: 'lib-profile-comparison',
   templateUrl: './profile-comparison-lib.component.html',
   styleUrls: ['./profile-comparison-lib.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  encapsulation: ViewEncapsulation.None,
 })
-export class ProfileComparisonLibComponent implements OnChanges, AfterViewInit {
+export class ProfileComparisonLibComponent
+  implements OnChanges, AfterViewInit, OnInit
+{
   @Input() interestsUser1: string[] = [];
   @Input() interestsUser2: string[] = [];
   @Input() interestsUser3: string[] = [];
@@ -53,7 +53,6 @@ export class ProfileComparisonLibComponent implements OnChanges, AfterViewInit {
   swiperInstanceUser2: Swiper | null = null;
   swiperInstanceUser3: Swiper | null = null;
 
-  // IMPORTANT: Change #interestsContainerUserX to be on swiper-wrapper div (see HTML below)
   @ViewChild('interestsContainerUser1', { static: false, read: ElementRef })
   interestsContainerUser1!: ElementRef;
 
@@ -75,14 +74,30 @@ export class ProfileComparisonLibComponent implements OnChanges, AfterViewInit {
 
   constructor(private http: HttpClient, private cd: ChangeDetectorRef) {}
 
+  ngOnInit(): void {
+    this.prepareSimilarityMatrixAndOrder();
+    this.detectFacesAndAlign();
+  }
+
   ngAfterViewInit(): void {
-    console.log(this.interestsContainerUser1);
-    // Initialize Swiper on view init and after interests update
     setTimeout(() => this.initSwipers(), 0);
   }
 
-  private initSwipers(): void {
-    // Destroy existing swipers if any to avoid duplicates
+  ngOnChanges(changes: SimpleChanges): void {
+    if (
+      changes['interestsUser1'] ||
+      changes['interestsUser2'] ||
+      changes['interestsUser3']
+    ) {
+      this.prepareSimilarityMatrixAndOrder();
+    }
+
+    if (changes['user1ImageSrc'] || changes['user2ImageSrc']) {
+      this.detectFacesAndAlign();
+    }
+  }
+
+  initSwipers(): void {
     if (this.swiperInstanceUser1) {
       this.swiperInstanceUser1.destroy(true, true);
       this.swiperInstanceUser1 = null;
@@ -142,22 +157,37 @@ export class ProfileComparisonLibComponent implements OnChanges, AfterViewInit {
     }
   }
 
-  ngOnChanges(changes: SimpleChanges): void {
-    console.log(changes);
-    if (
-      changes['interestsUser1'] ||
-      changes['interestsUser2'] ||
-      changes['interestsUser3']
-    ) {
-      this.prepareSimilarityMatrixAndOrder();
-    }
-
-    if (changes['user1ImageSrc'] || changes['user2ImageSrc']) {
-      this.detectFacesAndAlign();
-    }
+  clearInterestsAndLoading(): void {
+    this.orderedInterestsUser1 = [];
+    this.orderedInterestsUser2 = [];
+    this.orderedInterestsUser3 = [];
+    this.similarityMatrix = [];
+    this.loadingSimilarity = false;
+    this.cd.markForCheck();
   }
 
-  private prepareSimilarityMatrixAndOrder(): void {
+  fetchTextSimilarity(a: string, b: string): Observable<number> {
+    if (a === b) {
+      return of(1);
+    }
+    const url = `https://api.api-ninjas.com/v1/textsimilarity?text1=${encodeURIComponent(
+      a
+    )}&text2=${encodeURIComponent(b)}`;
+
+    return this.http
+      .get<{ similarity: number }>(url, {
+        headers: { 'X-Api-Key': this.API_KEY_NINJAS },
+      })
+      .pipe(
+        map((res) => res.similarity),
+        catchError(() => {
+          this.textSimilarityApiFailed = true;
+          return of(0);
+        })
+      );
+  }
+
+  prepareSimilarityMatrixAndOrder(): void {
     this.loadingSimilarity = true;
     this.textSimilarityApiFailed = false;
 
@@ -166,6 +196,7 @@ export class ProfileComparisonLibComponent implements OnChanges, AfterViewInit {
       ...this.interestsUser2,
       ...this.interestsUser3,
     ]);
+
     const interestsList = Array.from(uniqueInterests);
 
     if (interestsList.length === 0) {
@@ -173,63 +204,34 @@ export class ProfileComparisonLibComponent implements OnChanges, AfterViewInit {
       return;
     }
 
-    const similarityCache = new Map<string, number>();
-    const pairKey = (a: string, b: string) => [a, b].sort().join('|');
+    const similarityObservables: Observable<number>[] = [];
+    const indexPairs: [number, number][] = [];
 
-    const fetchSimilarity = (a: string, b: string) => {
-      const key = pairKey(a, b);
-      if (similarityCache.has(key)) {
-        return of(similarityCache.get(key)!);
-      }
-      const url = `https://api.api-ninjas.com/v1/textsimilarity?text1=${encodeURIComponent(
-        a
-      )}&text2=${encodeURIComponent(b)}`;
-
-      return this.http
-        .get<{ similarity: number }>(url, {
-          headers: { 'X-Api-Key': this.API_KEY_NINJAS },
-        })
-        .pipe(
-          map((res) => {
-            similarityCache.set(key, res.similarity);
-            return res.similarity;
-          }),
-          catchError(() => {
-            this.textSimilarityApiFailed = true;
-            similarityCache.set(key, 0);
-            return of(0);
-          })
-        );
-    };
-
-    const similarityMatrix: number[][] = [];
-
-    const fetchAllPairsSequentially = async () => {
-      for (let i = 0; i < interestsList.length; i++) {
-        similarityMatrix[i] = [];
-        for (let j = 0; j < interestsList.length; j++) {
-          if (i === j) {
-            similarityMatrix[i][j] = 1;
-          } else {
-            try {
-              const similarity = await fetchSimilarity(
-                interestsList[i],
-                interestsList[j]
-              ).toPromise();
-              similarityMatrix[i][j] = similarity ?? 0;
-            } catch {
-              similarityMatrix[i][j] = 0;
-            }
-          }
+    for (let i = 0; i < interestsList.length; i++) {
+      for (let j = 0; j < interestsList.length; j++) {
+        indexPairs.push([i, j]);
+        if (i === j) {
+          similarityObservables.push(of(1));
+        } else {
+          similarityObservables.push(
+            this.fetchTextSimilarity(interestsList[i], interestsList[j])
+          );
         }
       }
-    };
+    }
 
-    (async () => {
-      try {
-        await fetchAllPairsSequentially();
+    forkJoin(similarityObservables).subscribe({
+      next: (results) => {
+        const matrix: number[][] = [];
+        for (let i = 0; i < interestsList.length; i++) {
+          matrix[i] = [];
+        }
+        results.forEach((sim, idx) => {
+          const [i, j] = indexPairs[idx];
+          matrix[i][j] = sim;
+        });
 
-        this.similarityMatrix = similarityMatrix;
+        this.similarityMatrix = matrix;
 
         const interestIndexMap = new Map<string, number>();
         interestsList.forEach((s, i) => interestIndexMap.set(s, i));
@@ -239,11 +241,9 @@ export class ProfileComparisonLibComponent implements OnChanges, AfterViewInit {
             const iA = interestIndexMap.get(a)!;
             const iB = interestIndexMap.get(b)!;
             const avgA =
-              similarityMatrix[iA].reduce((acc, v) => acc + v, 0) /
-              similarityMatrix.length;
+              matrix[iA].reduce((acc, v) => acc + v, 0) / matrix.length;
             const avgB =
-              similarityMatrix[iB].reduce((acc, v) => acc + v, 0) /
-              similarityMatrix.length;
+              matrix[iB].reduce((acc, v) => acc + v, 0) / matrix.length;
             return avgB - avgA;
           });
         };
@@ -251,74 +251,67 @@ export class ProfileComparisonLibComponent implements OnChanges, AfterViewInit {
         this.orderedInterestsUser1 = reorderInterests(this.interestsUser1);
         this.orderedInterestsUser2 = reorderInterests(this.interestsUser2);
         this.orderedInterestsUser3 = reorderInterests(this.interestsUser3);
-      } catch {
+
+        this.loadingSimilarity = false;
+        this.cd.markForCheck();
+        setTimeout(() => this.initSwipers(), 0);
+      },
+      error: () => {
         this.textSimilarityApiFailed = true;
         this.orderedInterestsUser1 = [...this.interestsUser1].sort();
         this.orderedInterestsUser2 = [...this.interestsUser2].sort();
         this.orderedInterestsUser3 = [...this.interestsUser3].sort();
         this.similarityMatrix = [];
-      } finally {
         this.loadingSimilarity = false;
         this.cd.markForCheck();
-        setTimeout(() => this.initSwipers(), 0);
-      }
-    })();
+      },
+    });
   }
 
-  private clearInterestsAndLoading(): void {
-    this.orderedInterestsUser1 = [];
-    this.orderedInterestsUser2 = [];
-    this.orderedInterestsUser3 = [];
-    this.similarityMatrix = [];
-    this.loadingSimilarity = false;
-    this.cd.markForCheck();
+  detectFace(imageSrc: string): Observable<FaceBoundingBox | null> {
+    if (!imageSrc) {
+      return of(null);
+    }
+    const url = `${this.FACE_DETECT_API_URL}${encodeURIComponent(imageSrc)}`;
+    return this.http
+      .get<{
+        faces: { x: number; y: number; width: number; height: number }[];
+      }>(url, {
+        headers: { 'X-Api-Key': this.API_KEY_NINJAS },
+      })
+      .pipe(
+        map((res) => (res.faces && res.faces.length > 0 ? res.faces[0] : null)),
+        catchError(() => of(null))
+      );
   }
 
-  private detectFacesAndAlign(): void {
+  detectFacesAndAlign(): void {
     this.loadingFaceDetect = true;
-    this.faceBoxUser1 = null;
-    this.faceBoxUser2 = null;
-
-    const detectFace = (imageSrc: string) => {
-      if (!imageSrc) {
-        return of<FaceBoundingBox | null>(null);
-      }
-      const url = `${this.FACE_DETECT_API_URL}${encodeURIComponent(imageSrc)}`;
-      return this.http
-        .get<{
-          faces: { x: number; y: number; width: number; height: number }[];
-        }>(url, {
-          headers: { 'X-Api-Key': this.API_KEY_NINJAS },
-        })
-        .pipe(
-          map((res) =>
-            res.faces && res.faces.length > 0 ? res.faces[0] : null
-          ),
-          catchError(() => of(null))
-        );
-    };
-
-    Promise.all([
-      detectFace(this.user1ImageSrc).toPromise(),
-      detectFace(this.user2ImageSrc).toPromise(),
-    ])
-      .then(([face1, face2]) => {
-        this.faceBoxUser1 = face1 ?? null;
-        this.faceBoxUser2 = face2 ?? null;
+    forkJoin([
+      this.detectFace(this.user1ImageSrc),
+      this.detectFace(this.user2ImageSrc),
+    ]).subscribe({
+      next: ([face1, face2]) => {
+        this.faceBoxUser1 = face1;
+        this.faceBoxUser2 = face2;
         this.cd.markForCheck();
         this.applyImageAlignment();
-      })
-      .finally(() => {
+      },
+      complete: () => {
         this.loadingFaceDetect = false;
         this.cd.markForCheck();
-      });
+      },
+      error: () => {
+        this.loadingFaceDetect = false;
+        this.cd.markForCheck();
+      },
+    });
   }
 
-  private applyImageAlignment(): void {
+  applyImageAlignment(): void {
     if (!this.faceBoxUser1 || !this.faceBoxUser2) {
       return;
     }
-    // Approx eyes line: y + 0.4 * height
     const eyeLine1 = this.faceBoxUser1.y + this.faceBoxUser1.height * 0.4;
     const eyeLine2 = this.faceBoxUser2.y + this.faceBoxUser2.height * 0.4;
     const translateY = eyeLine1 - eyeLine2;
@@ -326,6 +319,61 @@ export class ProfileComparisonLibComponent implements OnChanges, AfterViewInit {
     if (this.imageContainerUser2) {
       this.imageContainerUser2.nativeElement.style.transform = `translateY(${translateY}px)`;
     }
+  }
+
+  getFaceBoxStyle(box: FaceBoundingBox) {
+    return {
+      top: `${(box.y / 260) * 100}%`,
+      left: `${(box.x / 200) * 100}%`,
+      width: `${(box.width / 200) * 100}%`,
+      height: `${(box.height / 260) * 100}%`,
+      position: 'absolute',
+    };
+  }
+
+  getObjectPosition(box: FaceBoundingBox | null) {
+    if (!box) return 'center center';
+    const centerY = box.y + box.height * 0.4;
+    const posY = Math.min(Math.max(((130 - centerY) / 260) * 100, 0), 100);
+    return `center ${posY}%`;
+  }
+
+  getAllUniqueInterests(): string[] {
+    return Array.from(
+      new Set([
+        ...this.orderedInterestsUser1,
+        ...this.orderedInterestsUser2,
+        ...this.orderedInterestsUser3,
+      ])
+    );
+  }
+
+  getInterestColor(interest: string) {
+    const allInterests = this.getAllUniqueInterests();
+    const idx = allInterests.indexOf(interest);
+    if (idx === -1 || !this.similarityMatrix.length) {
+      return { backgroundColor: '#ddd', color: '#444' };
+    }
+    const avgSimilarity =
+      this.similarityMatrix[idx].reduce((acc, v) => acc + v, 0) /
+      this.similarityMatrix.length;
+    const tealHue = 162;
+    const lightness = 90 - avgSimilarity * 45;
+    return {
+      backgroundColor: `hsl(${tealHue}, 60%, ${lightness}%)`,
+      color: avgSimilarity > 0.5 ? '#fff' : '#333',
+    };
+  }
+
+  getHeatmapColor(value: number): string {
+    if (value === 1) return '#2a9d8f'; // teal
+    if (value === 0) return '#eee'; // light gray
+    const tealRgb = [42, 157, 143];
+    const grayRgb = [238, 238, 238];
+    const r = Math.round(grayRgb[0] + (tealRgb[0] - grayRgb[0]) * value);
+    const g = Math.round(grayRgb[1] + (tealRgb[1] - grayRgb[1]) * value);
+    const b = Math.round(grayRgb[2] + (tealRgb[2] - grayRgb[2]) * value);
+    return `rgb(${r},${g},${b})`;
   }
 
   onViewProfileClick(userNumber: number): void {

@@ -1,66 +1,93 @@
-<div class="profile-comparison" style="border: 2px solid red;">
-  <div class="user-section user-1">
-    <div #imageContainerUser1 class="profile-image-container">
-      <img [src]="user1ImageSrc" alt="User 1 image" class="profile-image" />
-      <div *ngIf="loadingFaceDetect" class="loading-overlay">Detecting face...</div>
+<div class="profile-comparison-container" *ngIf="!loadingSimilarity && !loadingFaceDetect; else loadingTemplate">
+  <div class="profiles-row">
+    <div class="profile-column">
+      <div class="image-container" #imageContainerUser1>
+        <img *ngIf="user1ImageSrc" [src]="user1ImageSrc" alt="User 1"
+          [style.object-position]="getObjectPosition(faceBoxUser1)" class="profile-image" crossorigin="anonymous" />
+        <div class="face-box" *ngIf="faceBoxUser1" [ngStyle]="getFaceBoxStyle(faceBoxUser1)"></div>
+      </div>
+      <h3>User 1</h3>
+      <div #interestsContainerUser1 class="interests-container swiper-container">
+        <div class="swiper-wrapper">
+          <div *ngFor="let interest of orderedInterestsUser1" class="interest-slide"
+            [ngStyle]="getInterestColor(interest)" [title]="interest">
+            {{ interest }}
+          </div>
+        </div>
+        <div class="swiper-scrollbar"></div>
+      </div>
+      <button class="view-profile-btn" (click)="onViewProfileClick(1)">View Profile</button>
     </div>
-    <button type="button" (click)="onViewProfileClick(1)" class="view-profile-btn">
-      View Profile
-    </button>
+
+    <div class="profile-column">
+      <div class="image-container" #imageContainerUser2>
+        <img *ngIf="user2ImageSrc" [src]="user2ImageSrc" alt="User 2"
+          [style.object-position]="getObjectPosition(faceBoxUser2)" class="profile-image" crossorigin="anonymous" />
+        <div class="face-box" *ngIf="faceBoxUser2" [ngStyle]="getFaceBoxStyle(faceBoxUser2)"></div>
+      </div>
+      <h3>User 2</h3>
+      <div #interestsContainerUser2 class="interests-container swiper-container">
+        <div class="swiper-wrapper">
+          <div *ngFor="let interest of orderedInterestsUser2" class="interest-slide"
+            [ngStyle]="getInterestColor(interest)" [title]="interest">
+            {{ interest }}
+          </div>
+        </div>
+        <div class="swiper-scrollbar"></div>
+      </div>
+      <button class="view-profile-btn" (click)="onViewProfileClick(2)">View Profile</button>
+    </div>
+
+    <div class="profile-column">
+      <div class="image-container">
+        <div class="placeholder-image">
+          <span>User 3 Image</span>
+        </div>
+      </div>
+      <h3>User 3</h3>
+      <div #interestsContainerUser3 class="interests-container swiper-container">
+        <div class="swiper-wrapper">
+          <div *ngFor="let interest of orderedInterestsUser3" class="interest-slide"
+            [ngStyle]="getInterestColor(interest)" [title]="interest">
+            {{ interest }}
+          </div>
+        </div>
+        <div class="swiper-scrollbar"></div>
+      </div>
+      <button class="view-profile-btn" (click)="onViewProfileClick(3)">View Profile</button>
+    </div>
   </div>
 
-  <div class="interests-section">
-    <div class="interests-list">
-      <h3>User 1 Interests</h3>
-      <div *ngIf="loadingSimilarity" class="loading-overlay">Loading similarity...</div>
-      <div *ngIf="textSimilarityApiFailed" class="fallback-warning">
-        Cannot fetch similarity - showing default sorted list.
-      </div>
-      <!-- Changed: put #interestsContainerUser1 on swiper-wrapper -->
-      <div class="swiper-wrapper" #interestsContainerUser1>
-        <div class="swiper-slide interest-item" *ngFor="let interest of orderedInterestsUser1" [title]="interest">
-          {{ interest }}
-        </div>
-      </div>
-      <div class="swiper-scrollbar"></div>
-    </div>
-
-    <div class="interests-list">
-      <h3>User 2 Interests</h3>
-      <div *ngIf="loadingSimilarity" class="loading-overlay">Loading similarity...</div>
-      <div *ngIf="textSimilarityApiFailed" class="fallback-warning">
-        Cannot fetch similarity - showing default sorted list.
-      </div>
-      <div class="swiper-wrapper" #interestsContainerUser2>
-        <div class="swiper-slide interest-item" *ngFor="let interest of orderedInterestsUser2" [title]="interest">
-          {{ interest }}
-        </div>
-      </div>
-      <div class="swiper-scrollbar"></div>
-    </div>
-
-    <div class="interests-list">
-      <h3>User 3 Interests</h3>
-      <div *ngIf="loadingSimilarity" class="loading-overlay">Loading similarity...</div>
-      <div *ngIf="textSimilarityApiFailed" class="fallback-warning">
-        Cannot fetch similarity - showing default sorted list.
-      </div>
-      <div class="swiper-wrapper" #interestsContainerUser3>
-        <div class="swiper-slide interest-item" *ngFor="let interest of orderedInterestsUser3" [title]="interest">
-          {{ interest }}
-        </div>
-      </div>
-      <div class="swiper-scrollbar"></div>
-    </div>
+  <div class="similarity-matrix-container" *ngIf="similarityMatrix.length > 0">
+    <h4>Interests Similarity Matrix</h4>
+    <table class="similarity-matrix">
+      <thead>
+        <tr>
+          <th></th>
+          <th *ngFor="let interest of getAllUniqueInterests()">{{ interest }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let row of similarityMatrix; let i = index">
+          <th>{{ getAllUniqueInterests()[i] }}</th>
+          <td *ngFor="let val of row" [style.background]="getHeatmapColor(val)" [title]="val | number:'1.2-2'"
+            class="cell">
+            {{ val | number:'1.2-2' }}
+          </td>
+        </tr>
+      </tbody>
+    </table>
   </div>
 
-  <div class="user-section user-2">
-    <div #imageContainerUser2 class="profile-image-container">
-      <img [src]="user2ImageSrc" alt="User 2 image" class="profile-image" />
-      <div *ngIf="loadingFaceDetect" class="loading-overlay">Detecting face...</div>
-    </div>
-    <button type="button" (click)="onViewProfileClick(2)" class="view-profile-btn">
-      View Profile
-    </button>
+  <div *ngIf="textSimilarityApiFailed" class="error-message">
+    Text similarity service is currently unavailable. Interests are sorted alphabetically.
   </div>
 </div>
+
+<ng-template #loadingTemplate>
+  <div class="loading-container">
+    <div *ngIf="loadingSimilarity" class="loader-text">Loading similarity data...</div>
+    <div *ngIf="loadingFaceDetect" class="loader-text">Detecting faces and aligning images...</div>
+    <div class="spinner"></div>
+  </div>
+</ng-template>
