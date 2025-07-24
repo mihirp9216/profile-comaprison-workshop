@@ -15,12 +15,19 @@
     "downlevelIteration": true,
     "experimentalDecorators": true,
     "moduleResolution": "node",
+    "skipLibCheck": true,
     "importHelpers": true,
+    "paths": {
+      "profile-comparison-lib": [
+        "dist/profile-comparison-lib"
+      ]
+    },
     "target": "ES2022",
     "module": "ES2022",
     "useDefineForClassFields": false,
     "lib": [
       "ES2022",
+      "esnext",
       "dom"
     ]
   },

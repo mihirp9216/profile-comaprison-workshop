@@ -1,0 +1,66 @@
+<div class="profile-comparison" style="border: 2px solid red;">
+  <div class="user-section user-1">
+    <div #imageContainerUser1 class="profile-image-container">
+      <img [src]="user1ImageSrc" alt="User 1 image" class="profile-image" />
+      <div *ngIf="loadingFaceDetect" class="loading-overlay">Detecting face...</div>
+    </div>
+    <button type="button" (click)="onViewProfileClick(1)" class="view-profile-btn">
+      View Profile
+    </button>
+  </div>
+
+  <div class="interests-section">
+    <div class="interests-list">
+      <h3>User 1 Interests</h3>
+      <div *ngIf="loadingSimilarity" class="loading-overlay">Loading similarity...</div>
+      <div *ngIf="textSimilarityApiFailed" class="fallback-warning">
+        Cannot fetch similarity - showing default sorted list.
+      </div>
+      <!-- Changed: put #interestsContainerUser1 on swiper-wrapper -->
+      <div class="swiper-wrapper" #interestsContainerUser1>
+        <div class="swiper-slide interest-item" *ngFor="let interest of orderedInterestsUser1" [title]="interest">
+          {{ interest }}
+        </div>
+      </div>
+      <div class="swiper-scrollbar"></div>
+    </div>
+
+    <div class="interests-list">
+      <h3>User 2 Interests</h3>
+      <div *ngIf="loadingSimilarity" class="loading-overlay">Loading similarity...</div>
+      <div *ngIf="textSimilarityApiFailed" class="fallback-warning">
+        Cannot fetch similarity - showing default sorted list.
+      </div>
+      <div class="swiper-wrapper" #interestsContainerUser2>
+        <div class="swiper-slide interest-item" *ngFor="let interest of orderedInterestsUser2" [title]="interest">
+          {{ interest }}
+        </div>
+      </div>
+      <div class="swiper-scrollbar"></div>
+    </div>
+
+    <div class="interests-list">
+      <h3>User 3 Interests</h3>
+      <div *ngIf="loadingSimilarity" class="loading-overlay">Loading similarity...</div>
+      <div *ngIf="textSimilarityApiFailed" class="fallback-warning">
+        Cannot fetch similarity - showing default sorted list.
+      </div>
+      <div class="swiper-wrapper" #interestsContainerUser3>
+        <div class="swiper-slide interest-item" *ngFor="let interest of orderedInterestsUser3" [title]="interest">
+          {{ interest }}
+        </div>
+      </div>
+      <div class="swiper-scrollbar"></div>
+    </div>
+  </div>
+
+  <div class="user-section user-2">
+    <div #imageContainerUser2 class="profile-image-container">
+      <img [src]="user2ImageSrc" alt="User 2 image" class="profile-image" />
+      <div *ngIf="loadingFaceDetect" class="loading-overlay">Detecting face...</div>
+    </div>
+    <button type="button" (click)="onViewProfileClick(2)" class="view-profile-btn">
+      View Profile
+    </button>
+  </div>
+</div>
