@@ -54,7 +54,8 @@
             "index": "projects/showcase-app/src/index.html",
             "main": "projects/showcase-app/src/main.ts",
             "polyfills": [
-              "zone.js"
+              "zone.js",
+              "projects/showcase-app/src/polyfills.ts"
             ],
             "tsConfig": "projects/showcase-app/tsconfig.app.json",
             "inlineStyleLanguage": "scss",

@@ -1,93 +1,172 @@
-<div class="profile-comparison-container" *ngIf="!loadingSimilarity && !loadingFaceDetect; else loadingTemplate">
+<!------------------------Working code starts -------------------------->
+<!-- <div class="profile-comparison-container" *ngIf="!loadingSimilarity && !loadingFaceDetect; else loadingTemplate">
   <div class="profiles-row">
-    <div class="profile-column">
+    <section class="profile-column" role="region" aria-label="User 1 Profile">
       <div class="image-container" #imageContainerUser1>
-        <img *ngIf="user1ImageSrc" [src]="user1ImageSrc" alt="User 1"
-          [style.object-position]="getObjectPosition(faceBoxUser1)" class="profile-image" crossorigin="anonymous" />
+        <img *ngIf="user1ImageSrc" [src]="user1ImageSrc" alt="User 1 photo" [style.object-position]="getObjectPosition(faceBoxUser1)" class="profile-image" crossorigin="anonymous"
+          i18n-alt="User 1 photo description" />
         <div class="face-box" *ngIf="faceBoxUser1" [ngStyle]="getFaceBoxStyle(faceBoxUser1)"></div>
       </div>
-      <h3>User 1</h3>
-      <div #interestsContainerUser1 class="interests-container swiper-container">
+      <h3 i18n="User 1 heading" class="profile-name">User 1</h3>
+      <div #interestsContainerUser1 class="interests-container swiper-container" aria-label="User 1 Interests List"
+        role="list">
         <div class="swiper-wrapper">
-          <div *ngFor="let interest of orderedInterestsUser1" class="interest-slide"
-            [ngStyle]="getInterestColor(interest)" [title]="interest">
+          <span *ngFor="let interest of orderedInterestsUser1" class="interest-slide"
+            [ngStyle]="getInterestColor(interest)" [title]="interest" role="listitem" tabindex="0"
+            i18n-title="User 1 interest tooltip">
             {{ interest }}
-          </div>
+          </span>
         </div>
         <div class="swiper-scrollbar"></div>
       </div>
-      <button class="view-profile-btn" (click)="onViewProfileClick(1)">View Profile</button>
-    </div>
+      <button class="view-profile-btn" (click)="onViewProfileClick(1)" i18n="Button to view the full profile of user 1"
+        aria-label="View profile of User 1">
+        View Profile
+      </button>
+    </section>
 
-    <div class="profile-column">
+    <section class="profile-column" role="region" aria-label="User 2 Profile">
       <div class="image-container" #imageContainerUser2>
-        <img *ngIf="user2ImageSrc" [src]="user2ImageSrc" alt="User 2"
-          [style.object-position]="getObjectPosition(faceBoxUser2)" class="profile-image" crossorigin="anonymous" />
+        <img *ngIf="user2ImageSrc" [src]="user2ImageSrc" alt="User 2 photo"
+          [style.object-position]="getObjectPosition(faceBoxUser2)" class="profile-image" crossorigin="anonymous"
+          i18n-alt="User 2 photo description" />
         <div class="face-box" *ngIf="faceBoxUser2" [ngStyle]="getFaceBoxStyle(faceBoxUser2)"></div>
       </div>
-      <h3>User 2</h3>
-      <div #interestsContainerUser2 class="interests-container swiper-container">
+      <h3 i18n="User 2 heading" class="profile-name">User 2</h3>
+      <div #interestsContainerUser2 class="interests-container swiper-container" aria-label="User 2 Interests List"
+        role="list">
         <div class="swiper-wrapper">
-          <div *ngFor="let interest of orderedInterestsUser2" class="interest-slide"
-            [ngStyle]="getInterestColor(interest)" [title]="interest">
+          <span *ngFor="let interest of orderedInterestsUser2" class="interest-slide"
+            [ngStyle]="getInterestColor(interest)" [title]="interest" role="listitem" tabindex="0"
+            i18n-title="User 2 interest tooltip">
             {{ interest }}
-          </div>
+          </span>
         </div>
         <div class="swiper-scrollbar"></div>
       </div>
-      <button class="view-profile-btn" (click)="onViewProfileClick(2)">View Profile</button>
-    </div>
+      <button class="view-profile-btn" (click)="onViewProfileClick(2)" i18n="Button to view the full profile of user 2"
+        aria-label="View profile of User 2">
+        View Profile
+      </button>
+    </section>
 
-    <div class="profile-column">
-      <div class="image-container">
-        <div class="placeholder-image">
-          <span>User 3 Image</span>
-        </div>
+    <section class="profile-column" role="region" aria-label="User 3 Profile">
+      <div class="image-container placeholder-image">
+        <span i18n="User 3 placeholder text" class="placeholder-text">User 3 Image</span>
       </div>
-      <h3>User 3</h3>
-      <div #interestsContainerUser3 class="interests-container swiper-container">
+      <h3 i18n="User 3 heading" class="profile-name">User 3</h3>
+      <div #interestsContainerUser3 class="interests-container swiper-container" aria-label="User 3 Interests List"
+        role="list">
         <div class="swiper-wrapper">
-          <div *ngFor="let interest of orderedInterestsUser3" class="interest-slide"
-            [ngStyle]="getInterestColor(interest)" [title]="interest">
+          <span *ngFor="let interest of orderedInterestsUser3" class="interest-slide"
+            [ngStyle]="getInterestColor(interest)" [title]="interest" role="listitem" tabindex="0"
+            i18n-title="User 3 interest tooltip">
             {{ interest }}
-          </div>
+          </span>
         </div>
         <div class="swiper-scrollbar"></div>
       </div>
-      <button class="view-profile-btn" (click)="onViewProfileClick(3)">View Profile</button>
-    </div>
+      <button class="view-profile-btn" (click)="onViewProfileClick(3)" i18n="Button to view the full profile of user 3"
+        aria-label="View profile of User 3">
+        View Profile
+      </button>
+    </section>
   </div>
 
-  <div class="similarity-matrix-container" *ngIf="similarityMatrix.length > 0">
-    <h4>Interests Similarity Matrix</h4>
-    <table class="similarity-matrix">
+  <section class="similarity-matrix-container" *ngIf="similarityMatrix.length > 0"
+    aria-label="Interests Similarity Matrix">
+    <h4 i18n="Interests similarity matrix heading">Interests Similarity Matrix</h4>
+    <table class="similarity-matrix" role="table" aria-readonly="true" aria-describedby="similarityMatrixDesc">
+      <caption id="similarityMatrixDesc" class="sr-only">
+        Table showing similarity scores between interests of the users
+      </caption>
       <thead>
         <tr>
-          <th></th>
-          <th *ngFor="let interest of getAllUniqueInterests()">{{ interest }}</th>
+          <th scope="col"></th>
+          <th scope="col" *ngFor="let interest of getAllUniqueInterests()">{{ interest }}</th>
         </tr>
       </thead>
       <tbody>
         <tr *ngFor="let row of similarityMatrix; let i = index">
-          <th>{{ getAllUniqueInterests()[i] }}</th>
+          <th scope="row">{{ getAllUniqueInterests()[i] }}</th>
           <td *ngFor="let val of row" [style.background]="getHeatmapColor(val)" [title]="val | number:'1.2-2'"
-            class="cell">
+            class="cell" tabindex="0">
             {{ val | number:'1.2-2' }}
           </td>
         </tr>
       </tbody>
     </table>
-  </div>
+  </section>
 
-  <div *ngIf="textSimilarityApiFailed" class="error-message">
+  <div *ngIf="textSimilarityApiFailed" class="error-message" role="alert"
+    i18n="Error message when text similarity api fails">
     Text similarity service is currently unavailable. Interests are sorted alphabetically.
   </div>
 </div>
 
 <ng-template #loadingTemplate>
-  <div class="loading-container">
-    <div *ngIf="loadingSimilarity" class="loader-text">Loading similarity data...</div>
-    <div *ngIf="loadingFaceDetect" class="loader-text">Detecting faces and aligning images...</div>
-    <div class="spinner"></div>
+  <div class="loading-container" role="status" aria-live="polite" aria-busy="true">
+    <div *ngIf="loadingSimilarity" class="loader-text" i18n="Loading similarity text">
+      Loading similarity data...
+    </div>
+    <div *ngIf="loadingFaceDetect" class="loader-text" i18n="Loading face detection text">
+      Detecting faces and aligning images...
+    </div>
+    <div class="spinner" aria-label="Loading spinner"></div>
   </div>
-</ng-template>
+</ng-template> -->
+
+<!------------------------Working code ends -------------------------->
+
+<div class="profile-comparison-container" aria-label="Profile Comparison UI">
+  <div class="profile-image-container profile1-container" aria-label="User 1 Profile Picture">
+    <img [src]="user1ImageSrc" alt="User 1 photo" class="profile1-image" />
+    <div class="profile1-gradient-overlay-dark"></div>
+    <div class="profile1-gradient-overlay-mask"></div>
+  </div>
+
+  <div class="profile-image-container profile2-container" aria-label="User 2 Profile Picture">
+    <img [src]="user2ImageSrc" alt="User 2 photo" class="profile2-image" />
+    <div class="profile2-gradient-overlay-mask"></div>
+    <div class="profile2-gradient-rotated"></div>
+  </div>
+
+  <div class="interests-list-container" aria-label="User Interests List">
+    <div class="interest-text japanese">Japanese</div>
+    <div class="interest-text gardening">Gardening</div>
+    <div class="interest-text baseball">Baseball</div>
+    <div class="interest-text bears">Bears</div>
+    <div class="interest-text motocross">Motocross</div>
+    <div class="interest-text mma">MMA</div>
+    <div class="interest-text biology">Biology</div>
+    <div class="interest-text masters-degree">Masters Degree</div>
+    <div class="interest-text parks-show">Parks and Rec Show</div>
+    <div class="interest-text tron">Tron</div>
+    <div class="interest-text pina-coladas">Pina Coladas</div>
+    <div class="interest-text subway">Subway</div>
+    <div class="interest-text sushi">Sushi</div>
+    <div class="interest-text pizza">Pizza</div>
+    <div class="interest-text volleyball">Volleyball</div>
+    <div class="interest-text albany-ny">Albany, NY</div>
+    <div class="interest-text university">University</div>
+  </div>
+
+  <div class="view-profile-text" tabindex="0" role="button" aria-label="View Profile Action">
+    View Profile
+  </div>
+
+  <div class="group-515477"></div>
+  <div class="group-515478"></div>
+
+  <div class="arrow arrow66"></div>
+  <div class="arrow arrow61"></div>
+  <div class="arrow arrow70"></div>
+  <div class="arrow arrow71"></div>
+  <div class="arrow arrow62"></div>
+  <div class="arrow arrow63"></div>
+  <div class="arrow arrow64"></div>
+  <div class="arrow arrow65"></div>
+  <div class="arrow arrow68"></div>
+  <div class="arrow arrow67"></div>
+  <div class="arrow arrow69"></div>
+</div>
